@@ -1,54 +1,43 @@
-/*
-const start = async () => {
-    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+const extractCurrentClue = () => {
 
-    for (let i = 22000; i < 22100; i++) {
-        try {
-            const url = 'https://www.nytimes.com/svc/crosswords/v6/puzzle/' + i.toString() + '.json';
-            const http = new XMLHttpRequest();
-            http.open('GET', url, false);
-            http.send(null);
+    // Select the currently selected cell
+    const selectedCell = document.querySelector('div.xwd__board--content g.xwd__cell rect.xwd__cell--selected');
 
-            if (http.status == 200) {
-                const response = JSON.parse(http.responseText);
-                const publishDate = response.publicationDate;
-                const subCat = response.subcategory;
-
-                if (publishDate === today) {
-                    console.log('Found matching page:', url);
-                    document.getElementById("test").innerHTML = url;
-                    return;
-                } else {
-                    console.log(url, 'publish date does not match');
-                }
-            } else {
-                console.log(url, 'is missing');
-            }
-        } catch (e) {
-            console.error('Error fetching URL:', url, e);
-        }
+    if (!selectedCell) {
+        console.error('No selected cell found');
+        return null;
     }
-}
+    
+    const ariaLabel = selectedCell.getAttribute('aria-label');
 
-start();
-*/
-const extractCrosswordClues = () => {
-    const clues = [];
+    // Example aria-label format: "58D: Short-tailed weasel, Answer: 5 letters, Letter: 0"
+    const clueRegex = /(\d+[A-Z]): (.*), Answer: (\d+) letters/;
+    const match = ariaLabel.match(clueRegex);
 
-    for (var i = 1; i < 100; i++) {
-        console.log(i);
-        var cell = document.getElementById("cell-id-"+i.toString());
-        console.log(cell);
-        var ariaLabel = cell.getAttribute('aria-label');
-        if (ariaLabel) {
-            clues.push(ariaLabel);
-        }
+    if (match) {
+        const clueNumber = match[1];
+        const clueText = match[2];
+        const answerLength = match[3];
+
+        return {
+            clue: clueText,
+            length: parseInt(answerLength)
+        };
+    } else {
+        console.error('Clue and answer length not found in aria-label');
+        return null;
     }
-    return clues;
-}
-
-// Run the function to extract clues and log them to the console
-const crosswordClues = extractCrosswordClues();
-console.log('Crossword Clues:', crosswordClues);
+};
 
 
+// Listen for messages from the popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'extractCurrentClue') {
+        const currentClue = extractCurrentClue();
+        sendResponse(currentClue);
+    } else if (request.action === 'log') {
+        console.log("FROM POPUP:", request.message);
+    } else if (request.action === 'error') {
+        console.error("FROM POPUP:", request.message);
+    }
+});
