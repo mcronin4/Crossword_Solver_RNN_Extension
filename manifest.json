@@ -4,12 +4,12 @@
     "description": "Find possible answers to NYT Crossword clues when stuck",
     "version": "1.0",
     "action": {
-      "default_popup": "hello.html",
-      "default_icon": "logo.png"
+      "default_popup": "chrome_extension/popup.html",
+      "default_icon": "chrome_extension/logo.png"
     },
     "content_scripts": [
       {
-        "js": ["findCWdata.js"],
+        "js": ["chrome_extension/findCWdata.js"],
         "matches": [
         "https://www.nytimes.com/crosswords/*"
       ]
