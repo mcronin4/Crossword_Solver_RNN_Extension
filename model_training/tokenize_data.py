@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 from transformers import RobertaTokenizer, TFRobertaModel
 import tensorflow as tf
-import keras
-from tensorflow.python.keras.layers import Input, LSTM, Dense
-from tensorflow.python.keras.models import Model
+import tf_keras
+from tf_keras.layers import Input, LSTM, Dense
+from tf_keras.models import Model
 from sklearn.model_selection import train_test_split
 from keras import preprocessing
 
@@ -21,8 +21,8 @@ class ClueModel:
     
     def load_data(self, csv_path):
         data = pd.read_csv(csv_path, usecols=['Word', 'Clue'])
-        self.clues = data['clue'].astype(str).values
-        self.answers = data['answer'].astype(str).values
+        self.clues = data['Clue'].astype(str).values
+        self.answers = data['Word'].astype(str).values
 
     def tokenize_clues(self):
         input_ids = [self.tokenizer.encode(clue) for clue in self.clues]
@@ -43,7 +43,7 @@ class ClueModel:
         answer_padded = preprocessing.sequence.pad_sequences(answer_sequences, maxlen=self.max_answer_length, dtype="long", truncating="post", padding="post")
 
         self.num_classes = len(self.char_to_index)
-        answer_padded = np.array([keras.utils.to_categorical(seq, num_classes=self.num_classes) for seq in answer_padded])
+        answer_padded = np.array([tf_keras.utils.to_categorical(seq, num_classes=self.num_classes) for seq in answer_padded])
         self.answer_padded = tf.convert_to_tensor(answer_padded)
     
     def split_data(self, test_size=0.1):
@@ -57,7 +57,7 @@ class ClueModel:
         roberta_output = roberta_model(input_ids)[0]
 
         x = LSTM(128, return_sequences=True)(roberta_output)
-        output = keras.layers.TimeDistributed(Dense(self.num_classes, activation='softmax'))(x)
+        output = tf_keras.layers.TimeDistributed(Dense(self.num_classes, activation='softmax'))(x)
 
         self.model = Model(inputs=input_ids, outputs=output)
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
@@ -73,7 +73,7 @@ class ClueModel:
         self.model.save(path)
 
 clue_model = ClueModel()
-clue_model.load_data('nytcrosswords.csv')
+clue_model.load_data('model_training\\nytcrosswords.csv')
 clue_model.tokenize_clues()
 clue_model.char_tokenize_answers()
 clue_model.split_data()
