@@ -1,2 +1,4 @@
-import tensorflow as tf
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+import torch
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
+
