@@ -2,11 +2,11 @@ import pandas as pd
 import numpy as np
 from transformers import RobertaTokenizer, TFRobertaModel
 import tensorflow as tf
-import tf_keras
-from tf_keras.layers import Input, LSTM, Dense, TimeDistributed
-from tf_keras.models import Model
+#import tf_keras
+#from tf_keras.layers import Input, LSTM, Dense, TimeDistributed
+#from tf_keras.models import Model
 from sklearn.model_selection import train_test_split
-from keras import preprocessing
+from keras_preprocessing import sequence
 
 class ClueModel:
     def __init__(self, model_name='roberta-base'):
@@ -37,7 +37,7 @@ class ClueModel:
             return [[char_to_index[char] for char in text] for text in texts]
 
         answer_sequences = char_tokenize(self.answers, self.char_to_index)
-        answer_padded = preprocessing.sequence.pad_sequences(answer_sequences, maxlen=self.max_answer_length, dtype="long", truncating="post", padding="post")
+        answer_padded = sequence.pad_sequences(answer_sequences, maxlen=self.max_answer_length, dtype="long", truncating="post", padding="post")
 
         self.num_classes = len(self.char_to_index)
         answer_padded = np.array([tf.keras.utils.to_categorical(seq, num_classes=self.num_classes) for seq in answer_padded])
@@ -48,7 +48,7 @@ class ClueModel:
         input_ids_np = self.input_ids.numpy() if isinstance(self.input_ids, tf.Tensor) else self.input_ids
         answer_padded_np = self.answer_padded.numpy() if isinstance(self.answer_padded, tf.Tensor) else self.answer_padded
 
-        # Split the data
+        # Split the datap
         self.input_train, self.input_val, self.answer_train, self.answer_val = train_test_split(
             input_ids_np, answer_padded_np, test_size=test_size)
 
@@ -61,16 +61,16 @@ class ClueModel:
     def build_model(self):
         roberta_model = TFRobertaModel.from_pretrained(self.model_name)
 
-        input_ids = Input(shape=(self.max_length,), dtype=tf.int32, name='input_ids')
+        input_ids = tf.keras.layers.Input(shape=(self.max_length,), dtype=tf.int32, name='input_ids')
         roberta_output = roberta_model(input_ids)[0]
 
         # Adding LSTM layer to handle sequence data
-        x = LSTM(64, return_sequences=True)(roberta_output)
+        x = tf.keras.layers.LSTM(64, return_sequences=True)(roberta_output)
         
         # Adding Dense layer to ensure correct output shape
-        x = TimeDistributed(Dense(self.num_classes, activation='softmax'))(x)
+        x = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(self.num_classes, activation='softmax'))(x)
 
-        self.model = Model(inputs=input_ids, outputs=x)
+        self.model = tf.keras.models.Model(inputs=input_ids, outputs=x)
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
     def train_model(self, epochs=1, batch_size=16):
